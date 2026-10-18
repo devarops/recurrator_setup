@@ -132,9 +132,11 @@
 
     - name: Join the tailnet
       ansible.builtin.command:
-        cmd: tailscale up --hostname=recurrator
-      environment:
-        TS_AUTHKEY: "{{ tailscale_key.json.key }}"
+        argv:
+          - tailscale
+          - up
+          - "--auth-key={{ tailscale_key.json.key }}"
+          - "--hostname=recurrator"
       no_log: true
       changed_when: true
 
