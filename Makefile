@@ -27,7 +27,7 @@ init:
 create_server: init
 	$(DIGITALOCEAN_ENV) cd $(TF_DIR) && terraform apply -auto-approve
 
-setup_server:
+setup_server: init
 	IP=$(IP); \
 	ssh-keygen -R "$$IP" -f $(KNOWN_HOSTS) >/dev/null 2>&1 || true; \
 	ssh-keyscan "$$IP" >> $(KNOWN_HOSTS); \
@@ -35,7 +35,7 @@ setup_server:
 	ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN_HOSTS)" \
 	ansible-playbook -i "$$IP," -u root --tags setup $(PLAYBOOK)
 
-destroy_server:
+destroy_server: init
 	IP=$(IP); \
 	ssh-keygen -R "$$IP" -f $(KNOWN_HOSTS) >/dev/null 2>&1 || true; \
 	ssh-keyscan "$$IP" >> $(KNOWN_HOSTS); \
@@ -44,7 +44,7 @@ destroy_server:
 	ansible-playbook -i "$$IP," -u root --tags teardown $(PLAYBOOK)
 	$(DIGITALOCEAN_ENV) cd $(TF_DIR) && terraform destroy -auto-approve
 
-destroy_server_force:
+destroy_server_force: init
 	$(DIGITALOCEAN_ENV) cd $(TF_DIR) && terraform destroy -auto-approve
 
 check:
