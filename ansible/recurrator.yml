@@ -2,7 +2,7 @@
 - name: Provision recurrator
   hosts: all
   become: true
-  gather_facts: true
+  gather_facts: false
   tags: [setup]
 
   vars:
@@ -16,6 +16,9 @@
     - name: Wait for the droplet to accept SSH
       ansible.builtin.wait_for_connection:
         timeout: 300
+
+    - name: Gather facts
+      ansible.builtin.setup:
 
     - name: Set the time zone
       community.general.timezone:

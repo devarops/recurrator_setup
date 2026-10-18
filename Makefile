@@ -29,8 +29,13 @@ create_server: init
 
 setup_server: init
 	IP=$(IP); \
+	for attempt in $$(seq 1 60); do \
+		ssh-keyscan "$$IP" > /tmp/recurrator_host_key 2>/dev/null && [ -s /tmp/recurrator_host_key ] && break; \
+		sleep 5; \
+	done; \
+	test -s /tmp/recurrator_host_key; \
 	ssh-keygen -R "$$IP" -f $(KNOWN_HOSTS) >/dev/null 2>&1 || true; \
-	ssh-keyscan "$$IP" >> $(KNOWN_HOSTS); \
+	cat /tmp/recurrator_host_key >> $(KNOWN_HOSTS); \
 	ANSIBLE_HOST_KEY_CHECKING=True \
 	ANSIBLE_SSH_ARGS="-o UserKnownHostsFile=$(KNOWN_HOSTS)" \
 	ansible-playbook -i "$$IP," -u root --tags setup $(PLAYBOOK)
