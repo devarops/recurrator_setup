@@ -1,0 +1,28 @@
+name: Build and Test
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  actions:
+    runs-on: ubuntu-latest
+    env:
+      github_sha: ${{ github.sha }}
+    steps:
+    - name: Copy repository
+      uses: actions/checkout@v4
+    - name: Build image
+      run: docker build --tag evaristor/recurrator_setup:latest --tag evaristor/recurrator_setup:${github_sha:0:4} .
+    - name: Check format, validation and syntax
+      run: docker run --rm evaristor/recurrator_setup:latest make check
+    - name: Docker log-in
+      env:
+        docker_username: ${{ secrets.docker_username }}
+        docker_password: ${{ secrets.docker_password }}
+      run: echo "${docker_password}" | docker login -u "${docker_username}" --password-stdin
+    - name: Upload image to Docker Hub
+      run: docker push evaristor/recurrator_setup:latest
+    - name: Tag image with hash
+      run: docker push evaristor/recurrator_setup:${github_sha:0:4}

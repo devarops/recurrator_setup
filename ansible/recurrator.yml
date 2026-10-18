@@ -1,0 +1,269 @@
+---
+- name: Provision recurrator
+  hosts: all
+  become: true
+  gather_facts: true
+  tags: [setup]
+
+  vars:
+    config_dir: /root/.config/recurrator
+    app_dir: /root/recurrator
+    deploy_key_source: /root/.vault/deploy_keys/recurrator_config
+    deploy_key_destination: /root/.ssh/recurrator_config
+    data_repo: git@github-recurrator:devarops/recurrator.config.git
+
+  tasks:
+    - name: Wait for the droplet to accept SSH
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Set the time zone
+      community.general.timezone:
+        name: America/Los_Angeles
+
+    - name: Create the swapfile
+      ansible.builtin.command:
+        cmd: fallocate -l 1G /swapfile
+        creates: /swapfile
+
+    - name: Set swapfile permissions
+      ansible.builtin.file:
+        path: /swapfile
+        mode: "0600"
+
+    - name: Enable the swapfile
+      ansible.builtin.shell: |
+        set -euo pipefail
+        if ! swapon --show=NAME --noheadings | grep -qx /swapfile; then
+          mkswap /swapfile
+          swapon /swapfile
+        fi
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Persist the swapfile
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: "/swapfile none swap sw 0 0"
+        state: present
+
+    - name: Reduce swap aggressiveness
+      ansible.posix.sysctl:
+        name: vm.swappiness
+        value: "10"
+        state: present
+        reload: true
+
+    - name: Install system packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - docker.io
+          - docker-compose-v2
+          - git
+          - jq
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Configure Docker log rotation
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        mode: "0644"
+        content: |
+          {
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "3"
+            }
+          }
+      register: docker_daemon_config
+      notify: Restart Docker
+
+    - name: Enable Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Apply Docker handler before starting containers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Install Tailscale  # noqa: command-instead-of-module
+      ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+      args:
+        creates: /usr/bin/tailscale
+
+    - name: Request a Tailscale OAuth token
+      ansible.builtin.uri:
+        url: https://api.tailscale.com/api/v2/oauth/token
+        method: POST
+        body_format: form-urlencoded
+        body:
+          client_id: "{{ lookup('env', 'TAILSCALE_OAUTH_CLIENT_ID') }}"
+          client_secret: "{{ lookup('env', 'TAILSCALE_OAUTH_CLIENT_SECRET') }}"
+          grant_type: client_credentials
+        status_code: 200
+      register: tailscale_token
+      no_log: true
+
+    - name: Create an ephemeral Tailscale auth key
+      ansible.builtin.uri:
+        url: https://api.tailscale.com/api/v2/tailnet/-/keys
+        method: POST
+        headers:
+          Authorization: "Bearer {{ tailscale_token.json.access_token }}"
+        body_format: json
+        body:
+          capabilities:
+            devices:
+              create:
+                reusable: true
+                ephemeral: true
+                preauthorized: true
+                tags:
+                  - tag:recurrator
+          expirySeconds: 3600
+        status_code: 200
+      register: tailscale_key
+      no_log: true
+
+    - name: Join the tailnet
+      ansible.builtin.command:
+        cmd: tailscale up --hostname=recurrator
+      environment:
+        TS_AUTHKEY: "{{ tailscale_key.json.key }}"
+      no_log: true
+      changed_when: true
+
+    - name: Create the SSH directory
+      ansible.builtin.file:
+        path: /root/.ssh
+        state: directory
+        mode: "0700"
+
+    - name: Install the data repository deploy key
+      ansible.builtin.copy:
+        src: "{{ deploy_key_source }}"
+        dest: "{{ deploy_key_destination }}"
+        mode: "0600"
+      no_log: true
+
+    - name: Configure SSH for the data repository
+      ansible.builtin.blockinfile:
+        path: /root/.ssh/config
+        create: true
+        mode: "0600"
+        marker: "# {mark} recurrator data repository"
+        block: |
+          Host github-recurrator
+            HostName github.com
+            User git
+            IdentityFile {{ deploy_key_destination }}
+            IdentitiesOnly yes
+
+    - name: Create the configuration directory
+      ansible.builtin.file:
+        path: "{{ config_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Clone or update the data repository
+      ansible.builtin.git:
+        repo: "{{ data_repo }}"
+        dest: "{{ config_dir }}"
+        version: develop
+        update: true
+        accept_hostkey: true
+
+    - name: Configure the data repository identity
+      community.general.git_config:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        scope: local
+        repo: "{{ config_dir }}"
+      loop:
+        - { name: user.name, value: "recurrator droplet" }
+        - { name: user.email, value: "recurrator@islas.org.mx" }
+
+    - name: Install the data repository Cronfile
+      ansible.builtin.command:
+        cmd: "crontab {{ config_dir }}/src/Cronfile"
+      changed_when: true
+
+    - name: Create the application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Install the production compose file
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../compose.prod.yml"
+        dest: "{{ app_dir }}/compose.yml"
+        mode: "0644"
+
+    - name: Pull the application image
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
+    - name: Start the application
+      ansible.builtin.command:
+        cmd: docker compose up --detach --remove-orphans
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
+    - name: Initialize the application
+      ansible.builtin.command:
+        cmd: docker compose exec -T cli make init
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
+    - name: Wait for the API
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8000/openapi.json
+        status_code: 200
+      register: api_health
+      until: api_health.status == 200
+      retries: 30
+      delay: 5
+
+    - name: Schedule Docker image pruning
+      ansible.builtin.copy:
+        dest: /etc/cron.d/recurrator-docker-prune
+        mode: "0644"
+        content: |
+          SHELL=/bin/bash
+          PATH=/usr/local/bin:/usr/bin:/bin
+          15 3 * * * root docker image prune --all --force
+
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+
+- name: Tear down recurrator
+  hosts: all
+  become: true
+  gather_facts: false
+  tags: [teardown]
+
+  vars:
+    config_dir: /root/.config/recurrator
+
+  tasks:
+    - name: Sync the data repository one last time
+      ansible.builtin.command:
+        cmd: "{{ config_dir }}/src/sync.sh"
+      changed_when: true
+
+    - name: Leave the tailnet
+      ansible.builtin.command:
+        cmd: tailscale logout
+      failed_when: false
+      changed_when: true
