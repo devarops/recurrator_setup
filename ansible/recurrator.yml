@@ -237,6 +237,16 @@
       retries: 30
       delay: 5
 
+    - name: Wait for the frontend
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8000/
+        return_content: true
+        status_code: 200
+      register: frontend_health
+      until: frontend_health.status == 200 and '<div id="contexts">' in frontend_health.content
+      retries: 30
+      delay: 5
+
     - name: Schedule Docker image pruning
       ansible.builtin.copy:
         dest: /etc/cron.d/recurrator-docker-prune
