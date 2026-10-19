@@ -15,8 +15,7 @@ application login, so that network is the protection.
 1. The provisioner runs the setup image, which creates the server and provisions
    it.
 2. The setup image pulls the latest recurrator application and starts it.
-3. On a phone or laptop in the tailnet, open the static frontend once as
-   `public/index.html?api=http://recurrator:8000`.
+3. On a phone or laptop in the tailnet, open `http://recurrator:8000/`.
 4. Use the app normally; task changes sync to the data repository every 15
    minutes.
 

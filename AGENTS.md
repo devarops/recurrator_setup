@@ -31,6 +31,7 @@ This repository provisions the DigitalOcean droplet that runs recurrator. The ap
 - Image-only: Ansible pulls `evaristor/recurrator:latest`; the app generates its gitignored modules at container start. Never add an app checkout or bind mount.
 - Persistence is the private data repo `devarops/recurrator.config` at `/root/.config/recurrator`. Do not introduce a DigitalOcean block-storage volume.
 - The API has no authentication. The firewall allows only TCP 22 and UDP 41641; port 8000 is reachable only through Tailscale. Never add 8000 to the firewall.
+- The application serves the frontend at `/` on the same origin as the API. Keep file:// and API-address configuration out of the frontend.
 - The droplet is 512 MiB. Swap is required, `mutmut` is out, and image builds belong in CI.
 - The sync `Cronfile` and `sync.sh` are shared with the laptop. Keep them free of hardcoded `HOME`, repository paths, and SSH key paths.
 - Teardown logs the Tailscale node out so the name `recurrator` is free for the next create. Do not remove that task.
