@@ -5,7 +5,7 @@ services:
     ports:
       # Public interface is closed by the DigitalOcean firewall; this port is
       # reachable only through Tailscale (tailscale0).
-      - "8000:8000"
+      - "80:8000"
     volumes:
       - /root/.config/recurrator:/root/.config/recurrator
     restart: unless-stopped

@@ -230,7 +230,7 @@
 
     - name: Wait for the API
       ansible.builtin.uri:
-        url: http://127.0.0.1:8000/openapi.json
+        url: http://127.0.0.1/openapi.json
         status_code: 200
       register: api_health
       until: api_health.status == 200
@@ -239,7 +239,7 @@
 
     - name: Wait for the frontend
       ansible.builtin.uri:
-        url: http://127.0.0.1:8000/
+        url: http://127.0.0.1/
         return_content: true
         status_code: 200
       register: frontend_health
