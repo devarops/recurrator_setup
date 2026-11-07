@@ -22,7 +22,7 @@ This repository provisions the DigitalOcean droplet that runs recurrator. The ap
 
 - `DIGITALOCEAN_RECURRATOR_TOKEN` is mapped to `DIGITALOCEAN_TOKEN` by the Makefile.
 - Terraform state is local to the setup image and must be mounted from outside, or every run starts blind; the volume name is in the README command.
-- Tailscale uses an OAuth client (`TAILSCALE_OAUTH_CLIENT_ID` and `TAILSCALE_OAUTH_CLIENT_SECRET`) with `auth_keys` and `devices` write scopes to mint a one-hour ephemeral key. The ACL tag is `tag:recurrator`, and the ACL must declare a tag owner for it; the client can only mint keys for tags it owns. Do not replace this with a 90-day auth key.
+- Tailscale uses an OAuth client (`TAILSCALE_OAUTH_CLIENT_ID` and `TAILSCALE_OAUTH_CLIENT_SECRET`) with `auth_keys` and `devices` write scopes to mint a one-hour ephemeral key. The ACL tag is `tag:recurrator`, and the ACL must declare a tag owner for it; the client can only mint keys for tags it is permitted to grant ([Tailscale OAuth clients](https://tailscale.com/kb/1215/oauth-clients)). Do not replace this with a 90-day auth key.
 - The data repository deploy key is read from `/root/.vault/deploy_keys/recurrator_config`; the provisioner mounts `/home/geci/.vault` at `/root/.vault`.
 - The provisioner SSH key is `/root/.ssh/id_rsa.pub`, falling back to `/root/.ssh/id_ed25519.pub`.
 
@@ -36,6 +36,7 @@ This repository provisions the DigitalOcean droplet that runs recurrator. The ap
 - The sync `Cronfile` and `sync.sh` are shared with the laptop. Keep them free of hardcoded `HOME`, repository paths, and SSH key paths.
 - Teardown logs the Tailscale node out so the name `recurrator` is free for the next create. Do not remove that task.
 - DigitalOcean reuses IPs with new host keys; the Makefile keeps a per-state `known_hosts` and removes the current IP before scanning.
+- The readiness checks in the setup play request the host address on port 80, while the container healthcheck probes `127.0.0.1:8000` inside the container; changing the port mapping means changing both.
 
 ## CI and commits
 
