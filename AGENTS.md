@@ -28,7 +28,7 @@ This repository provisions the DigitalOcean droplet that runs recurrator. The ap
 
 ## Deployment constraints
 
-- Image-only: Ansible pulls `evaristor/recurrator:latest`; the app generates its gitignored modules at container start. Never add an app checkout or bind mount.
+- Image-only: Ansible pulls `evaristor/recurrator:latest` and starts it; the app generates its gitignored modules at container start and the editable install is baked into the image, so deployment runs no `make` step. Never add an app checkout or bind mount.
 - Persistence is the private data repo `devarops/recurrator.config` at `/root/.config/recurrator`. Do not introduce a DigitalOcean block-storage volume.
 - The API has no authentication. The firewall allows only TCP 22 and UDP 41641; port 80 is reachable only through Tailscale. Never add 80 to the firewall.
 - The application serves the frontend at `/` on the same origin as the API. Keep file:// and API-address configuration out of the frontend.
