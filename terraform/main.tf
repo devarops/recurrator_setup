@@ -24,9 +24,11 @@ resource "digitalocean_droplet" "recurrator" {
   ipv6       = false
   monitoring = false
 
+  # Use key IDs, not fingerprints: a key created in the same apply is not
+  # indexed by fingerprint early enough for droplet creation.
   ssh_keys = [
-    data.digitalocean_ssh_key.user.fingerprint,
-    digitalocean_ssh_key.provisioner.fingerprint,
+    data.digitalocean_ssh_key.user.id,
+    digitalocean_ssh_key.provisioner.id,
   ]
 
   tags = var.tags
