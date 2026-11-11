@@ -1,0 +1,236 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1400" width="1800" height="1400" role="img" aria-labelledby="title desc">
+  <title id="title">Recurrator target architecture</title>
+  <desc id="desc">Browser and TUI clients reach a Tailscale-only DigitalOcean droplet. A gateway on host port 80 serves the static web image at / and forwards /api unchanged to the FastAPI API on internal port 8000. Only the API mounts the task-data volume. A provisioner cron runs the setup image, and CI publishes the API, web, and setup images.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#455a64"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1565c0"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#e65100"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#137333"/>
+    </marker>
+  </defs>
+
+  <style>
+    .bg { fill: #fbfbf8; }
+    .title { font: 700 30px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #1b5e20; }
+    .subtitle { font: 16px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #455a64; }
+    .panel-title { font: 700 20px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #263238; }
+    .box-title { font: 700 18px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #263238; }
+    .body { font: 14px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #37474f; }
+    .small { font: 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #546e7a; }
+    .mono { font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #263238; }
+    .mono-small { font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #37474f; }
+    .client { fill: #e8f0fe; stroke: #1a73e8; stroke-width: 2; }
+    .gateway { fill: #fff3e0; stroke: #e65100; stroke-width: 2; }
+    .web { fill: #f3e8fd; stroke: #7b1fa2; stroke-width: 2; }
+    .api { fill: #e6f4ea; stroke: #137333; stroke-width: 2; }
+    .volume { fill: #fff8e1; stroke: #f9a825; stroke-width: 2; }
+    .docker { fill: #ffffff; fill-opacity: 0.35; stroke: #546e7a; stroke-width: 2; stroke-dasharray: 8 6; }
+    .droplet { fill: #fafafa; stroke: #37474f; stroke-width: 2; }
+    .tailscale { fill: #e0f2f1; stroke: #00796b; stroke-width: 2; }
+    .ci { fill: #eceff1; stroke: #546e7a; stroke-width: 2; }
+    .ci-box { fill: #ffffff; stroke: #546e7a; stroke-width: 2; }
+    .test { fill: #e0f7fa; stroke: #00838f; stroke-width: 2; }
+    .test-box { fill: #ffffff; stroke: #00838f; stroke-width: 2; }
+    .note { fill: #fffde7; stroke: #fbc02d; stroke-width: 1.5; }
+    .arrow { stroke: #455a64; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    .arrow-blue { stroke: #1565c0; stroke-width: 2.5; fill: none; marker-end: url(#arrow-blue); }
+    .arrow-orange { stroke: #e65100; stroke-width: 2.5; fill: none; marker-end: url(#arrow-orange); }
+    .arrow-green { stroke: #137333; stroke-width: 2.5; fill: none; marker-end: url(#arrow-green); }
+    .arrow-dashed { stroke-dasharray: 7 5; }
+    .legend-text { font: 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #37474f; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1400"/>
+
+  <text class="title" x="60" y="55">Recurrator — target architecture</text>
+  <text class="subtitle" x="60" y="85">The API is the product. The web and TUI are peer clients. One public origin, and no port in public URLs.</text>
+
+  <!-- Clients -->
+  <text class="panel-title" x="60" y="130">Clients (tailnet only)</text>
+
+  <rect class="client" x="60" y="150" width="340" height="110" rx="12"/>
+  <text class="box-title" x="230" y="180" text-anchor="middle">Browser</text>
+  <text class="body" x="230" y="205" text-anchor="middle">phone or laptop</text>
+  <text class="mono" x="230" y="230" text-anchor="middle">http://recurrator/</text>
+  <text class="mono" x="230" y="248" text-anchor="middle">http://recurrator/api/...</text>
+
+  <rect class="client" x="440" y="150" width="340" height="110" rx="12"/>
+  <text class="box-title" x="610" y="180" text-anchor="middle">TUI (terminal)</text>
+  <text class="body" x="610" y="205" text-anchor="middle">future terminal client</text>
+  <text class="mono" x="610" y="230" text-anchor="middle">http://recurrator/api/...</text>
+  <text class="small" x="610" y="250" text-anchor="middle">same API base · not via web</text>
+
+  <!-- Tailscale band -->
+  <rect class="tailscale" x="40" y="290" width="1720" height="40" rx="8"/>
+  <text class="body" x="900" y="315" text-anchor="middle" font-weight="600">Tailscale tailnet — port 80 is reachable only from tailnet devices; there is no public exposure</text>
+
+  <!-- Droplet -->
+  <rect class="droplet" x="60" y="350" width="1700" height="540" rx="16"/>
+  <text class="panel-title" x="500" y="385">DigitalOcean droplet (512 MiB) — destroyed and recreated nightly by the provisioner</text>
+  <text class="small" x="500" y="407">Tailscale node: recurrator · Docker Engine · Docker Compose · no application checkout on the host</text>
+
+  <!-- Docker network -->
+  <rect class="docker" x="90" y="430" width="1230" height="430" rx="14"/>
+  <text class="small" x="700" y="455">Docker network (compose)</text>
+
+  <!-- Gateway -->
+  <rect class="gateway" x="120" y="480" width="300" height="190" rx="12"/>
+  <text class="box-title" x="270" y="512" text-anchor="middle">gateway (nginx)</text>
+  <text class="body" x="270" y="538" text-anchor="middle">host 80 → gateway:80</text>
+  <text class="mono" x="270" y="568" text-anchor="middle">location / → web</text>
+  <text class="mono" x="270" y="592" text-anchor="middle">location /api/ → api</text>
+  <text class="small" x="270" y="618" text-anchor="middle">single public entry point</text>
+  <text class="small" x="270" y="638" text-anchor="middle">no path rewriting</text>
+  <text class="small" x="270" y="658" text-anchor="middle">resolver 127.0.0.11 · variables</text>
+
+  <!-- Web -->
+  <rect class="web" x="520" y="480" width="280" height="150" rx="12"/>
+  <text class="box-title" x="660" y="512" text-anchor="middle">web (nginx)</text>
+  <text class="body" x="660" y="538" text-anchor="middle">pure static image</text>
+  <text class="mono" x="660" y="563" text-anchor="middle">public/ · styleguide</text>
+  <text class="small" x="660" y="588" text-anchor="middle">no volume · no backend code</text>
+  <text class="small" x="660" y="608" text-anchor="middle">pages · date · csv</text>
+
+  <!-- API -->
+  <rect class="api" x="880" y="480" width="380" height="190" rx="12"/>
+  <text class="box-title" x="1070" y="512" text-anchor="middle">api (FastAPI)</text>
+  <text class="body" x="1070" y="538" text-anchor="middle">internal :8000 (never published)</text>
+  <text class="mono" x="1070" y="563" text-anchor="middle">native /api/task/... · /api/context/...</text>
+  <text class="mono" x="1070" y="588" text-anchor="middle">/api/docs · /api/openapi.json</text>
+  <text class="small" x="1070" y="618" text-anchor="middle">reads and writes the task CSV</text>
+  <text class="small" x="1070" y="638" text-anchor="middle">the product</text>
+
+  <!-- Same-origin note -->
+  <rect class="note" x="520" y="700" width="740" height="80" rx="8"/>
+  <text class="body" x="890" y="732" text-anchor="middle">No CORS: browser and API share one origin. Public URLs carry no port.</text>
+  <text class="small" x="890" y="758" text-anchor="middle">Gateway resolver + upstream variables; with web down, /api stays 200 and / returns 502.</text>
+
+  <!-- Volume -->
+  <rect class="volume" x="1360" y="480" width="360" height="170" rx="12"/>
+  <text class="box-title" x="1540" y="512" text-anchor="middle">host volume</text>
+  <text class="mono" x="1540" y="540" text-anchor="middle">/root/.config/recurrator</text>
+  <text class="body" x="1540" y="570" text-anchor="middle">tasks.csv · config.json</text>
+  <text class="body" x="1540" y="595" text-anchor="middle">datapackage.json</text>
+  <text class="small" x="1540" y="620" text-anchor="middle">mounted only into api</text>
+
+  <!-- Data repo -->
+  <rect class="volume" x="1360" y="700" width="360" height="100" rx="12"/>
+  <text class="box-title" x="1540" y="730" text-anchor="middle">private data repo</text>
+  <text class="mono" x="1540" y="755" text-anchor="middle">devarops/recurrator.config</text>
+  <text class="small" x="1540" y="778" text-anchor="middle">synced by the repo Cronfile</text>
+
+  <!-- Production arrows -->
+  <path class="arrow-blue" d="M 230 260 L 230 480"/>
+  <path class="arrow-blue" d="M 610 260 L 610 340 L 270 340 L 270 480"/>
+  <text class="small" x="245" y="390">HTTP :80</text>
+
+  <path class="arrow-orange" d="M 420 540 L 520 540"/>
+  <text class="small" x="470" y="530" text-anchor="middle">location /</text>
+
+  <path class="arrow-green" d="M 420 645 L 880 645"/>
+  <text class="small" x="650" y="638" text-anchor="middle">location /api/ — prefix preserved</text>
+  <text class="small" x="650" y="662" text-anchor="middle">TUI and browser go straight to api; web is not in the path</text>
+
+  <path class="arrow-green" d="M 1260 560 L 1360 560"/>
+  <text class="small" x="1310" y="550" text-anchor="middle">bind mount</text>
+
+  <path class="arrow" d="M 1540 650 L 1540 700"/>
+  <text class="small" x="1550" y="680">git sync (cron)</text>
+
+  <!-- Build, publish, control plane -->
+  <rect class="ci" x="60" y="930" width="1000" height="400" rx="14"/>
+  <text class="panel-title" x="90" y="965">Build, publish, and control plane</text>
+
+  <rect class="api" x="90" y="990" width="280" height="90" rx="10"/>
+  <text class="box-title" x="230" y="1020" text-anchor="middle">recurrator</text>
+  <text class="body" x="230" y="1045" text-anchor="middle">API repo → API image</text>
+  <text class="small" x="230" y="1065" text-anchor="middle">tests · coverage · mutants · qed</text>
+
+  <rect class="web" x="410" y="990" width="280" height="90" rx="10"/>
+  <text class="box-title" x="550" y="1020" text-anchor="middle">recurrator.web</text>
+  <text class="body" x="550" y="1045" text-anchor="middle">web repo → web image</text>
+  <text class="small" x="550" y="1065" text-anchor="middle">browser · visual · approval</text>
+
+  <rect class="ci-box" x="730" y="990" width="280" height="90" rx="10"/>
+  <text class="box-title" x="870" y="1020" text-anchor="middle">recurrator_setup</text>
+  <text class="body" x="870" y="1045" text-anchor="middle">setup repo → setup image</text>
+  <text class="small" x="870" y="1065" text-anchor="middle">Terraform · Ansible · compose</text>
+
+  <path class="arrow" d="M 230 1080 L 230 1120"/>
+  <path class="arrow" d="M 550 1080 L 550 1120"/>
+  <path class="arrow" d="M 870 1080 L 870 1120"/>
+
+  <rect class="ci-box" x="90" y="1120" width="920" height="70" rx="10"/>
+  <text class="box-title" x="550" y="1148" text-anchor="middle">Docker Hub</text>
+  <text class="mono-small" x="550" y="1172" text-anchor="middle">evaristor/recurrator:latest · evaristor/recurrator.web:latest · evaristor/recurrator_setup:latest</text>
+
+  <path class="arrow" d="M 550 1190 L 550 1210"/>
+
+  <rect class="client" x="90" y="1210" width="920" height="80" rx="10"/>
+  <text class="box-title" x="550" y="1240" text-anchor="middle">provisioner (cron)</text>
+  <text class="body" x="550" y="1263" text-anchor="middle">pulls the setup image, creates the droplet, runs setup, destroys it nightly</text>
+  <text class="body" x="550" y="1282" text-anchor="middle">probes /api/openapi.json, /api/task/, /, main.js, ui.js</text>
+  <text class="small" x="90" y="1318">The API and web repos carry the five docs and use /end. The web repo keeps the full clone history.</text>
+
+  <!-- Test stack -->
+  <rect class="test" x="1100" y="930" width="640" height="400" rx="14"/>
+  <text class="panel-title" x="1130" y="965">Web test stack (local / CI)</text>
+
+  <rect class="test-box" x="1130" y="990" width="170" height="70" rx="10"/>
+  <text class="box-title" x="1215" y="1020" text-anchor="middle">develop</text>
+  <text class="small" x="1215" y="1042" text-anchor="middle">Playwright runner</text>
+
+  <rect class="gateway" x="1330" y="990" width="150" height="70" rx="10"/>
+  <text class="box-title" x="1405" y="1020" text-anchor="middle">gateway</text>
+  <text class="small" x="1405" y="1042" text-anchor="middle">stock nginx</text>
+
+  <rect class="web" x="1510" y="990" width="200" height="70" rx="10"/>
+  <text class="box-title" x="1610" y="1020" text-anchor="middle">web</text>
+  <text class="small" x="1610" y="1042" text-anchor="middle">built production image</text>
+
+  <rect class="api" x="1330" y="1100" width="150" height="70" rx="10"/>
+  <text class="box-title" x="1405" y="1130" text-anchor="middle">api</text>
+  <text class="small" x="1405" y="1152" text-anchor="middle">pulled latest</text>
+
+  <rect class="volume" x="1510" y="1100" width="200" height="70" rx="10"/>
+  <text class="box-title" x="1610" y="1130" text-anchor="middle">tests/data</text>
+  <text class="small" x="1610" y="1152" text-anchor="middle">mounted at /tests/data</text>
+
+  <path class="arrow" d="M 1300 1025 L 1330 1025"/>
+  <path class="arrow" d="M 1480 1025 L 1510 1025"/>
+  <path class="arrow" d="M 1405 1060 L 1405 1100"/>
+  <path class="arrow" d="M 1510 1135 L 1480 1135"/>
+  <text class="small" x="1495" y="1125" text-anchor="middle">csv</text>
+
+  <rect class="note" x="1130" y="1200" width="580" height="120" rx="8"/>
+  <text class="body" x="1150" y="1225">• develop → gateway → web / api</text>
+  <text class="body" x="1150" y="1247">• /api goes to api; the web container is not in the TUI path</text>
+  <text class="body" x="1150" y="1269">• fixtures: tests/data → /tests/data; csv=/tests/data/runtime/...</text>
+  <text class="body" x="1150" y="1291">• API image always :latest · 16 approved captures unchanged</text>
+  <text class="body" x="1150" y="1313">• web healthcheck: wget / · styleguide served, not interface</text>
+
+  <!-- Legend -->
+  <text class="legend-text" x="60" y="1372" font-weight="700">Legend</text>
+  <rect class="client" x="130" y="1360" width="16" height="16" rx="3"/>
+  <text class="legend-text" x="152" y="1372">client</text>
+  <rect class="gateway" x="220" y="1360" width="16" height="16" rx="3"/>
+  <text class="legend-text" x="242" y="1372">gateway</text>
+  <rect class="web" x="320" y="1360" width="16" height="16" rx="3"/>
+  <text class="legend-text" x="342" y="1372">web</text>
+  <rect class="api" x="400" y="1360" width="16" height="16" rx="3"/>
+  <text class="legend-text" x="422" y="1372">api</text>
+  <rect class="volume" x="480" y="1360" width="16" height="16" rx="3"/>
+  <text class="legend-text" x="502" y="1372">data</text>
+  <rect class="ci" x="560" y="1360" width="16" height="16" rx="3"/>
+  <text class="legend-text" x="582" y="1372">CI / control plane</text>
+  <rect class="test" x="710" y="1360" width="16" height="16" rx="3"/>
+  <text class="legend-text" x="732" y="1372">test stack</text>
+</svg>
