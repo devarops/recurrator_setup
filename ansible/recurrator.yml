@@ -210,6 +210,12 @@
         dest: "{{ app_dir }}/compose.yml"
         mode: "0644"
 
+    - name: Install the gateway configuration
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../gateway.conf"
+        dest: "{{ app_dir }}/gateway.conf"
+        mode: "0644"
+
     - name: Pull the application image
       ansible.builtin.command:
         cmd: docker compose pull
@@ -224,7 +230,7 @@
 
     - name: Wait for the API
       ansible.builtin.uri:
-        url: http://127.0.0.1/openapi.json
+        url: http://127.0.0.1/api/openapi.json
         status_code: 200
       register: api_health
       until: api_health.status == 200
