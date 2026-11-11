@@ -10,6 +10,10 @@ destroyed for thirty minutes each night and rebuilt, so every day starts from th
 same code. Only devices on your Tailscale network can reach the app; there is no
 application login, so that network is the protection.
 
+## Architecture
+
+![Recurrator target architecture](architecture.svg)
+
 ## How to use it
 
 1. The provisioner runs the setup image, which creates the server and provisions
